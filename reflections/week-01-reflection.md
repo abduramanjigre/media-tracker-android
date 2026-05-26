@@ -1,7 +1,7 @@
-# Week {{N}} Reflection
+# Week 1 Reflection
 
-**Name:**
-**Date:**
+**Name:Abdurahman Jigre**
+**Date:05-21-2026**
 
 ---
 
