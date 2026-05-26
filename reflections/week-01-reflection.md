@@ -17,11 +17,11 @@
 ## Code Review
 
 <!-- Every week you leave a review on a pod mate's pull request. Fill in both parts below.
-     Part 1 is the link — I will verify the review exists on GitHub.
-     Part 2 is your written assessment — what you actually looked at and what you found. -->
+     Part 1 is the link — I will verify the review exists on GitHub. https://github.com/abduramanjigre/media-tracker-android/pull/1
+     Part 2 is your written assessment — what you actually looked at and what you found. --> Week 1. We did not write anything. 
 
-**Reviewed:** *(pod mate's name)*
-**Link to my review:**
+**Reviewed:** *(klein central)*
+**Link to my review: https://github.com/abduramanjigre/media-tracker-android/pull/1 **
 
 ### What I Looked At
 
