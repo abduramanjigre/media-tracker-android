@@ -9,14 +9,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
+import android.R.attr.value
 class LibraryViewModel : ViewModel() {
 
     private val _libraryItems = MutableStateFlow<List<LibraryItem>>(emptyList())
     val libraryItems: StateFlow<List<LibraryItem>> = _libraryItems.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
-    val filterState: StateFlow<Boolean> = _isLoading.asStateFlow()
+    private val _filterState = MutableStateFlow(value = LibraryStatus.WANT_TO)
+    val filterState: StateFlow<LibraryStatus> = _filterState.asStateFlow()
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     init {
