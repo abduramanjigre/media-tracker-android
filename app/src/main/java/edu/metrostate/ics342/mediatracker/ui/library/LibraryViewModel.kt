@@ -1,10 +1,10 @@
 package edu.metrostate.ics342.mediatracker.ui.library
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import edu.metrostate.ics342.mediatracker.data.FakeMediaRepository
 import edu.metrostate.ics342.mediatracker.data.model.LibraryItem
 import edu.metrostate.ics342.mediatracker.data.model.LibraryStatus
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,6 +16,7 @@ class LibraryViewModel : ViewModel() {
     val libraryItems: StateFlow<List<LibraryItem>> = _libraryItems.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
+    val filterState: StateFlow<Boolean> = _isLoading.asStateFlow()
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     init {
@@ -23,9 +24,8 @@ class LibraryViewModel : ViewModel() {
     }
 
     fun loadLibrary() {
-        GlobalScope.launch {
+        viewModelScope.launch {
             _isLoading.value = true
-            Thread.sleep(800)
             _libraryItems.value = FakeMediaRepository.libraryItems
             _isLoading.value = false
         }
@@ -39,5 +39,9 @@ class LibraryViewModel : ViewModel() {
         _libraryItems.value = _libraryItems.value.map { item ->
             if (item.mediaId == mediaId) item.copy(status = newStatus) else item
         }
+    }
+
+    fun updateFilter(status: LibraryStatus) {
+        _filterState.value = status
     }
 }
