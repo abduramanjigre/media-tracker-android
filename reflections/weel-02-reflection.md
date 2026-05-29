@@ -10,23 +10,26 @@
 <!-- Paste a link to your commits for this week. The easiest way: go to your repo on GitHub,
      click "commits", and copy the URL after filtering by your name or branch. -->
 
-**Link:**
+**Link:https://github.com/abduramanjigre/media-tracker-android/pull/2/changes/d7040b290a08929074ee372f4cee3b6b25154b1b**
 
 ---
 
-## Code Review
+## Code Review 
 
 <!-- Every week you leave a review on a pod mate's pull request. Fill in both parts below.
      Part 1 is the link — I will verify the review exists on GitHub.
      Part 2 is your written assessment — what you actually looked at and what you found. -->
 
-**Reviewed:** *(pod mate's name)*
-**Link to my review:**
+**Reviewed:** *(Mark Klein)*
+**Link to my review: https://github.com/kleincentral/media-tracker-android/pull/3#pullrequestreview-4386197558**
 
 ### What I Looked At
 
 <!-- Walk through the code you reviewed. What was the PR trying to do? Which files or
      functions did you focus on? -->
+
+I reviewed Mark Klien’s changes in the LibraryViewModel and LibraryScreen files. 
+I focused on how the library items were loaded and how the filters worked in the library screen.
 
 ### What I Noticed
 
@@ -39,7 +42,7 @@
 <!-- Briefly summarize the comments you left on the PR. If you left a positive comment,
      say what it was. If you left a suggestion, say what you suggested and why. -->
 
----
+--- i left positive comments i did not leave any suggestions. 
 
 ## One Thing I Understood More Deeply
 
@@ -47,12 +50,14 @@
      what was confusing before, what made it make sense, and how you'd explain it to someone else.
      There are no wrong answers here. -->
 
----
+--- To be honest i am still trying to figure everything out. 
 
 ## One Thing I'm Still Confused About
 
 <!-- Be honest. This is the most useful part of the reflection for me — it tells me where to
      spend more time in class. You will not lose points for being confused. -->
+
+--- I am confused about a lot more than i like to admit. 
 
 on file libraryViewModel
 ---
