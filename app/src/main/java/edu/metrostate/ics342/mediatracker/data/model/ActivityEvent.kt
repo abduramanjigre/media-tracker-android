@@ -20,7 +20,6 @@ data class ActivityEvent(
     val user: UserProfile? = null,
     val media: Media? = null
 )
-
 fun ActivityEvent.descriptionText(context: Context): String {
     val name  = user?.displayName ?: context.getString(R.string.feed_user_someone)
     val title = media?.title      ?: context.getString(R.string.feed_media_something)

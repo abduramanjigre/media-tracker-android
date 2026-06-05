@@ -14,3 +14,4 @@ data class UserProfile(
     val isFollowing: Boolean? = null,
     val createdAt: String? = null
 )
+

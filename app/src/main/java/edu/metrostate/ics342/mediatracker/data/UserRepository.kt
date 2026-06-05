@@ -7,7 +7,6 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
 const val baseURL = "https://wjtzkgpxmxtzcczzbvrz.supabase.co/functions/v1/"
-
 class UserRepository {
     private val api: ApiService = Retrofit.Builder()
         .baseUrl(baseURL)
@@ -16,7 +15,6 @@ class UserRepository {
                 "application/json; charset=utf-8".toMediaType()))
         .build()
         .create(ApiService::class.java)
-
     suspend fun createAccount(
         displayName: String,
         username: String,

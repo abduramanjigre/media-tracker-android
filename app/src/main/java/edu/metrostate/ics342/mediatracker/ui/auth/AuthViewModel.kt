@@ -27,7 +27,6 @@ class AuthViewModel : ViewModel() {
 
     private val _loginState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val loginState: StateFlow<AuthUiState> = _loginState.asStateFlow()
-
     fun onEmailChange(value: String)    { _email.value    = value }
     fun onPasswordChange(value: String) { _password.value = value }
 

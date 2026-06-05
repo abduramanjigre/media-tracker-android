@@ -81,6 +81,7 @@ fun RegisterScreen(
             Text("Sign Up")
         }
     }
+
 }
 @Composable
 @Preview(showSystemUi = true)

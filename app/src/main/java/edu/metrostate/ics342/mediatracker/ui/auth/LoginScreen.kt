@@ -96,7 +96,6 @@ fun LoginScreen(
             Text(errorMsg, color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall)
         }
-
         Spacer(Modifier.height(24.dp))
 
         Button(
