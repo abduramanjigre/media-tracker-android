@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import edu.metrostate.ics342.mediatracker.theme.MediaTrackerTheme
 
 @Composable
 fun LoginScreen(
@@ -124,10 +125,10 @@ fun LoginScreen(
     }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
-    MaterialTheme {
+    MediaTrackerTheme {
         LoginScreen(
             onLoginSuccess = {},
             onNavigateToRegister = {}
