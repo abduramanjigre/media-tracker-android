@@ -41,11 +41,11 @@ fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
     viewModel: RegisterViewModel = viewModel()
 ) {
-
-    Column (modifier = Modifier.fillMaxSize(),
+    Column(
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
+    ) {
         Image(
             painterResource(R.drawable.smart_display),
             contentDescription = "Application Icon",
@@ -58,7 +58,6 @@ fun RegisterScreen(
         Text("Create Account")
         OutlinedTextField(
             TextFieldState(),
-
         )
         TextField(
             TextFieldState(),
@@ -81,8 +80,8 @@ fun RegisterScreen(
             Text("Sign Up")
         }
     }
-
 }
+
 @Composable
 @Preview(showSystemUi = true)
 fun RegisterScreenPreview() {

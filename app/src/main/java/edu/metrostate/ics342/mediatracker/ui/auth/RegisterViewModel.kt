@@ -19,23 +19,9 @@ class RegisterViewModel(
         _displayName.value = newValue
     }
 
-    private val _username = MutableStateFlow("")
-    val username = _username.asStateFlow()
-
-    private val _email = MutableStateFlow("")
-    val email = _email.asStateFlow()
-
-    private val _password = MutableStateFlow("")
-    val password = _password.asStateFlow()
-
     fun onSignUpClicked() {
         viewModelScope.launch {
-            userRepository.createAccount(
-                displayName = _displayName.value,
-                username = _username.value,
-                email = _email.value,
-                password = _password.value
-            )
+            userRepository.createAccount()
         }
     }
 }

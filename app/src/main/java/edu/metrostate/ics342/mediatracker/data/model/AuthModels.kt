@@ -11,6 +11,7 @@ data class CreateUserRequest(
     val clientId: String,
     val clientSecret: String
 )
+
 @Serializable
 data class TokenRequest(
     val grantType: String,
