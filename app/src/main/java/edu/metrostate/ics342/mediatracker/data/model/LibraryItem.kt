@@ -11,6 +11,7 @@ data class LibraryItem(
     val updatedAt: String,
     val media: Media
 )
+
 enum class LibraryStatus(@param:StringRes val labelRes: Int) {
     WANT_TO(R.string.status_want_to),
     IN_PROGRESS(R.string.status_in_progress),

@@ -42,6 +42,7 @@ private val DarkColorScheme = darkColorScheme(
     onSurface           = DarkOnSurface,
 )
 
+
 @Composable
 fun MediaTrackerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),

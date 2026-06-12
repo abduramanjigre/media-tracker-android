@@ -82,6 +82,8 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(40.dp))
 
+
+
         OutlinedTextField(
             value         = displayName,
             onValueChange = { displayName = it; errorMessage = null },
