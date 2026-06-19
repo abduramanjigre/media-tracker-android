@@ -10,3 +10,4 @@ interface UserApiService {
     @POST("users")
     suspend fun createUser(@Body body: RegisterRequest): Response<Unit>
 }
+

@@ -83,6 +83,7 @@ fun RegisterScreen(
             textAlign = TextAlign.Center
         )
 
+
         Spacer(Modifier.height(40.dp))
 
         OutlinedTextField(

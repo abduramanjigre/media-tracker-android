@@ -9,3 +9,4 @@ data class Review(
     val user: UserProfile? = null,
     val media: Media? = null
 )
+

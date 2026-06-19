@@ -25,3 +25,4 @@ fun Media.creatorCredit(context: Context): String = when (mediaType) {
     "show"  -> creator  ?: context.getString(R.string.media_unknown_creator)
     else    -> ""
 }
+

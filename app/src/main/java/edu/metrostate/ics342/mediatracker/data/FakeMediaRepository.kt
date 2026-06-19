@@ -9,7 +9,6 @@ import edu.metrostate.ics342.mediatracker.data.model.*
  * their app still runs and shows real-looking content.
  */
 object FakeMediaRepository {
-
     val currentUser = UserProfile(
         id           = "user-001",
         email        = "alex@example.com",
@@ -74,6 +73,7 @@ object FakeMediaRepository {
         LibraryItem("user-001", 8, LibraryStatus.WANT_TO,
             "2024-01-20T10:00:00Z", "2024-01-20T10:00:00Z", mediaList[7]),
     )
+
 
     private val userJordan = UserProfile("user-002", "j@example.com", "jsmith",   "Jordan Smith",  followerCount = 5,  followingCount = 10)
     private val userPriya  = UserProfile("user-003", "p@example.com", "priya_r", "Priya Patel",   followerCount = 23, followingCount = 15)
