@@ -80,6 +80,7 @@ object FakeMediaRepository {
     private val userMarco  = UserProfile("user-004", "m@example.com", "mramos",  "Marco Ramos",   followerCount = 8,  followingCount = 4)
     private val userSarah  = UserProfile("user-005", "s@example.com", "sarahk",  "Sarah Kim",     followerCount = 31, followingCount = 22)
 
+
     val activityFeed = listOf(
         ActivityEvent(1, "user-002", "finished", 5, createdAt = "2024-01-22T14:30:00Z",
             user = userJordan, media = mediaList[4]),

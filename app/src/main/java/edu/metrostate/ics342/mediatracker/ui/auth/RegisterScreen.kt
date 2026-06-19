@@ -47,6 +47,7 @@ fun RegisterScreen(
         }
     }
 
+
     val isLoading = registerState is RegisterViewModel.RegisterUiState.Loading
     val errorMsg  = (registerState as? RegisterViewModel.RegisterUiState.Error)
         ?.msgResId?.let { stringResource(it) }

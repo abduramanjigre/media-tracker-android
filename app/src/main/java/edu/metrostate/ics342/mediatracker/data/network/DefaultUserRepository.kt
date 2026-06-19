@@ -36,6 +36,7 @@ class DefaultUserRepository(
         }
     }
 
+
     override suspend fun login(email: String, password: String): LoginResult {
         return try {
             val response = service.login(
