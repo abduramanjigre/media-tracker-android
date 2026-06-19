@@ -4,6 +4,7 @@ import android.content.Context
 import edu.metrostate.ics342.mediatracker.R
 
 data class Media(
+
     val id: Int,
     val mediaType: String, // "book", "movie", or "show"
     val title: String,
@@ -25,3 +26,4 @@ fun Media.creatorCredit(context: Context): String = when (mediaType) {
     "show"  -> creator  ?: context.getString(R.string.media_unknown_creator)
     else    -> ""
 }
+
