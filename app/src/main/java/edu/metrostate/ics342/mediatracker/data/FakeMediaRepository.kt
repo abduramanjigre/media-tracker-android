@@ -74,7 +74,6 @@ object FakeMediaRepository {
             "2024-01-20T10:00:00Z", "2024-01-20T10:00:00Z", mediaList[7]),
     )
 
-
     private val userJordan = UserProfile("user-002", "j@example.com", "jsmith",   "Jordan Smith",  followerCount = 5,  followingCount = 10)
     private val userPriya  = UserProfile("user-003", "p@example.com", "priya_r", "Priya Patel",   followerCount = 23, followingCount = 15)
     private val userMarco  = UserProfile("user-004", "m@example.com", "mramos",  "Marco Ramos",   followerCount = 8,  followingCount = 4)
