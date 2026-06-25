@@ -1,10 +1,11 @@
 package edu.metrostate.ics342.mediatracker.ui.search
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
@@ -28,6 +29,21 @@ fun SearchResultsScreen(
     var searchBarQuery by remember { mutableStateOf(initialQuery) }
     val results by viewModel.results.collectAsState()
     val selectedType by viewModel.selectedType.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    val listState = rememberLazyListState()
+
+    // Trigger next page load when within 5 items of the end
+    val reachedBottom by remember {
+        derivedStateOf {
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            val total = listState.layoutInfo.totalItemsCount
+            total > 0 && lastVisible >= total - 5
+        }
+    }
+    LaunchedEffect(reachedBottom) {
+        if (reachedBottom) viewModel.loadNextPage()
+    }
 
     LaunchedEffect(initialQuery) {
         viewModel.search(initialQuery)
@@ -73,18 +89,27 @@ fun SearchResultsScreen(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
-        // Column instead of LazyColumn — intentional for the Week 6 teaching demo.
-        // Students will see why this doesn't scale before Regroup 1.
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize()
         ) {
-            results.forEach { media ->
+            items(results, key = { it.id }) { media ->
                 MediaResultCard(
                     media = media,
                     onClick = { onMediaClick(media.id) }
                 )
+            }
+            if (isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
             }
         }
     }
