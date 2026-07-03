@@ -23,6 +23,7 @@ import edu.metrostate.ics342.mediatracker.ui.profile.MyProfileScreen
 import edu.metrostate.ics342.mediatracker.ui.profile.UserProfileScreen
 import edu.metrostate.ics342.mediatracker.ui.review.WriteReviewScreen
 import edu.metrostate.ics342.mediatracker.ui.search.SearchScreen
+import edu.metrostate.ics342.mediatracker.ui.search.SearchResultsScreen
 import edu.metrostate.ics342.mediatracker.ui.settings.SettingsScreen
 
 private val bottomNavRoutes = setOf(
