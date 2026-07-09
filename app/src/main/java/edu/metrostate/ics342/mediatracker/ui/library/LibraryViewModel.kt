@@ -16,7 +16,7 @@ class LibraryViewModel : ViewModel() {
     val libraryItems: StateFlow<List<LibraryItem>> = _libraryItems.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
-    private val _filterState = MutableStateFlow(value = LibraryStatus.WANT_TO)
+    private val _filterState = MutableStateFlow(value = LibraryStatus.FINISHED)
     val filterState: StateFlow<LibraryStatus> = _filterState.asStateFlow()
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
