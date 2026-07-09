@@ -9,6 +9,7 @@ import edu.metrostate.ics342.mediatracker.data.model.*
  * their app still runs and shows real-looking content.
  */
 object FakeMediaRepository {
+
     val currentUser = UserProfile(
         id           = "user-001",
         email        = "alex@example.com",
@@ -79,7 +80,6 @@ object FakeMediaRepository {
     private val userMarco  = UserProfile("user-004", "m@example.com", "mramos",  "Marco Ramos",   followerCount = 8,  followingCount = 4)
     private val userSarah  = UserProfile("user-005", "s@example.com", "sarahk",  "Sarah Kim",     followerCount = 31, followingCount = 22)
 
-
     val activityFeed = listOf(
         ActivityEvent(1, "user-002", "finished", 5, createdAt = "2024-01-22T14:30:00Z",
             user = userJordan, media = mediaList[4]),
@@ -96,4 +96,51 @@ object FakeMediaRepository {
 
     val followers = listOf(userJordan, userPriya)
     val following = listOf(userMarco, userSarah)
+
+    /**
+     * Hardcoded Media Detail response used by the Media Detail screen until it is
+     * wired to GET /media/{id}. Core fields match the seeded catalog entry for
+     * "Dune: Part Two"; the movie-specific extras (description, runtime, review
+     * count) are filled in to complete the [MediaDetail] payload.
+     */
+    val sampleMediaDetail = MediaDetail(
+        id            = 1080,
+        mediaType     = "movie",
+        title         = "Dune: Part Two",
+        director      = "Denis Villeneuve",
+        coverUrl      = "https://image.tmdb.org/t/p/w300/heM4XKC0jA8fTSNe8F7oUkcJV7Z.jpg",
+        publishedYear = 2024,
+        averageRating = 0.0f,
+        ratingCount   = 0,
+        genres        = listOf("Science Fiction", "Action"),
+        description   = "Paul Atreides unites with Chani and the Fremen while seeking " +
+                "revenge against the conspirators who destroyed his family. Facing a choice " +
+                "between the love of his life and the fate of the known universe, he endeavors " +
+                "to prevent a terrible future only he can foresee.",
+        runtimeMinutes = 166,
+        reviewCount    = 2
+    )
+
+    /**
+     * Hardcoded reviews for [sampleMediaDetail]. Stands in for GET /reviews?mediaId=1080
+     * until the Media Detail screen is wired to the API.
+     */
+    val sampleReviews = listOf(
+        Review(
+            userId     = "user-003",
+            mediaId    = 1080,
+            rating     = 5,
+            reviewText = "A staggering achievement — bigger, bolder, and more emotional than Part One.",
+            createdAt  = "2024-03-04T09:00:00Z",
+            user       = userPriya
+        ),
+        Review(
+            userId     = "user-004",
+            mediaId    = 1080,
+            rating     = 4,
+            reviewText = "Gorgeous to look at and thunderously scored. Drags a little in the middle.",
+            createdAt  = "2024-03-02T18:30:00Z",
+            user       = userMarco
+        ),
+    )
 }

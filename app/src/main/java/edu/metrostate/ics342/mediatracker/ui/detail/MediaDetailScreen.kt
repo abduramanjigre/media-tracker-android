@@ -8,33 +8,32 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.automirrored.outlined.StarHalf
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import edu.metrostate.ics342.mediatracker.R
 import edu.metrostate.ics342.mediatracker.data.FakeMediaRepository
-import edu.metrostate.ics342.mediatracker.data.model.Media
+import edu.metrostate.ics342.mediatracker.data.model.MediaDetail
 import edu.metrostate.ics342.mediatracker.data.model.Review
 import edu.metrostate.ics342.mediatracker.data.model.creatorCredit
+import edu.metrostate.ics342.mediatracker.theme.MovieContainer
+import edu.metrostate.ics342.mediatracker.theme.OnMovieContainer
+import kotlin.math.roundToInt
 
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,304 +42,360 @@ fun MediaDetailScreen(
     onNavigateBack: () -> Unit,
     onWriteReview: (Int) -> Unit
 ) {
-    val context = LocalContext.current
+    // Not wired to the API yet — show the hardcoded MediaDetail sample.
+    val detail = FakeMediaRepository.sampleMediaDetail
+    val reviews = FakeMediaRepository.sampleReviews
 
-    val media = remember(mediaId) {
-        FakeMediaRepository.mediaList.find { it.id == mediaId } ?: FakeMediaRepository.mediaList.first()
-    }
-
-    // Hardcoded reviews
-    val fakeReviews = listOf(
-        Review(
-            userId = "user-002",
-            mediaId = media.id,
-            rating = 5,
-            reviewText = "This was absolutely amazing! Highly recommend it to everyone.",
-            createdAt = "2024-01-22T14:30:00Z",
-            user = FakeMediaRepository.followers[0]
-        ),
-        Review(
-            userId = "user-003",
-            mediaId = media.id,
-            rating = 4,
-            reviewText = "Pretty good, though the middle part dragged a bit.",
-            createdAt = "2024-01-21T11:15:00Z",
-            user = FakeMediaRepository.followers[1]
-        )
-    )
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.action_back))
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* TODO */ }) {
-                        Icon(Icons.Default.MoreVert, stringResource(R.string.action_more_options))
-                    }
+    Column(modifier = Modifier.fillMaxSize()) {
+        TopAppBar(
+            title = {},
+            navigationIcon = {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        Icons.AutoMirrored.Outlined.ArrowBack,
+                        contentDescription = stringResource(R.string.action_back)
+                    )
                 }
-            )
-        }
-    ) { innerPadding ->
+            },
+            actions = {
+                IconButton(onClick = { /* TODO: overflow menu */ }) {
+                    Icon(
+                        Icons.Outlined.MoreVert,
+                        contentDescription = stringResource(R.string.action_more_options)
+                    )
+                }
+            }
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(16.dp)
         ) {
-            // Cover Image
-            Card(
-                modifier = Modifier
-                    .size(width = 160.dp, height = 240.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            // ── Cover + title + credit + rating ──────────────────────────────
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (media.coverUrl != null) {
-                    AsyncImage(
-                        model = media.coverUrl,
-                        contentDescription = media.title,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = when (media.mediaType) {
-                                "book" -> "📖"; "movie" -> "🎬"; "show" -> "📺"
-                                else -> "?"
-                            },
-                            style = MaterialTheme.typography.displayLarge
-                        )
-                    }
-                }
-            }
+                MediaCover(detail)
 
-            Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(14.dp))
 
-            // Title and Creator
-            Text(
-                text = media.title,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = media.creatorCredit(context),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            // Rating row
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = null,
-                    tint = Color(0xFFFFB400),
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(Modifier.width(4.dp))
-                val locale = LocalConfiguration.current.locales[0]
                 Text(
-                    text = String.format(locale, "%.1f", media.averageRating),
-                    style = MaterialTheme.typography.titleMedium,
+                    text = detail.title,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(Modifier.width(4.dp))
+                Spacer(Modifier.height(2.dp))
                 Text(
-                    text = "(${media.ratingCount})",
+                    text = detail.creatorCredit(LocalContext.current),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                Spacer(Modifier.height(8.dp))
+                RatingSummary(
+                    averageRating = detail.averageRating,
+                    ratingCount = detail.ratingCount
+                )
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(20.dp))
 
-            // Buttons row
+            // ── Action buttons ───────────────────────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Button(
-                    onClick = { /* TODO */ },
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(vertical = 12.dp)
+                    onClick = { /* TODO: add to library */ },
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Outlined.Add, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.status_want_to))
+                    Text(stringResource(R.string.detail_add_want_to))
                 }
                 OutlinedButton(
-                    onClick = { /* TODO */ },
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(vertical = 12.dp)
+                    onClick = { /* TODO: save */ },
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Default.FavoriteBorder, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Save")
+                    Icon(
+                        Icons.Outlined.FavoriteBorder,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.detail_save))
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(20.dp))
 
-            // About section
-            Column(modifier = Modifier.fillMaxWidth()) {
+            // ── About ────────────────────────────────────────────────────────
+            if (!detail.description.isNullOrBlank()) {
+                SectionCaption(stringResource(R.string.detail_about))
+                Spacer(Modifier.height(6.dp))
                 Text(
-                    text = "About",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = "This is a placeholder description for the media item. In the future, this will be populated with real data from the API including a full synopsis of the book, movie, or show.",
+                    text = detail.description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Spacer(Modifier.height(20.dp))
             }
 
-            Spacer(Modifier.height(32.dp))
+            // ── Stat grid ────────────────────────────────────────────────────
+            StatGrid(detail)
 
-            // Stat Grid
+            Spacer(Modifier.height(20.dp))
+
+            // ── Reviews ──────────────────────────────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                StatBox(label = "Year", value = media.publishedYear?.toString() ?: "N/A")
-                
-                val middleLabel = when (media.mediaType) {
-                    "book" -> "Pages"
-                    "movie" -> "Runtime"
-                    "show" -> "Seasons"
-                    else -> "Details"
-                }
-                val middleValue = when (media.mediaType) {
-                    "book" -> "320"
-                    "movie" -> "124m"
-                    "show" -> "3"
-                    else -> "N/A"
-                }
-                StatBox(label = middleLabel, value = middleValue)
-                
-                StatBox(label = "Genre", value = media.genres.firstOrNull() ?: "N/A")
-            }
-
-            Spacer(Modifier.height(32.dp))
-
-            // Reviews section
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Reviews (${fakeReviews.size})",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                SectionCaption(
+                    text = stringResource(R.string.detail_reviews_count, detail.reviewCount),
+                    modifier = Modifier.weight(1f)
                 )
-                TextButton(onClick = { onWriteReview(media.id) }) {
-                    Text("+ Write Review")
+                TextButton(onClick = { onWriteReview(detail.id) }) {
+                    Text(stringResource(R.string.detail_write_review))
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(4.dp))
 
-            fakeReviews.forEach { review ->
-                ReviewCard(review)
-                Spacer(Modifier.height(16.dp))
+            if (reviews.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.detail_no_reviews),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            } else {
+                reviews.forEach { review ->
+                    ReviewCard(review)
+                    Spacer(Modifier.height(10.dp))
+                }
             }
         }
     }
 }
 
 @Composable
-fun StatBox(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun MediaCover(detail: MediaDetail) {
+    val containerColor = when (detail.mediaType) {
+        "book"  -> MaterialTheme.colorScheme.primaryContainer
+        "movie" -> MovieContainer
+        else    -> MaterialTheme.colorScheme.secondaryContainer
+    }
+    val iconTint = when (detail.mediaType) {
+        "book"  -> MaterialTheme.colorScheme.onPrimaryContainer
+        "movie" -> OnMovieContainer
+        else    -> MaterialTheme.colorScheme.secondary
+    }
+    val placeholder = when (detail.mediaType) {
+        "book"  -> R.drawable.menu_book_24px
+        "movie" -> R.drawable.movie_24px
+        else    -> R.drawable.tv_24px
+    }
+
+    Box(
+        modifier = Modifier
+            .size(width = 110.dp, height = 160.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(containerColor),
+        contentAlignment = Alignment.Center
+    ) {
+        if (detail.coverUrl != null) {
+            AsyncImage(
+                model = detail.coverUrl,
+                contentDescription = detail.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Icon(
+                painter = painterResource(placeholder),
+                contentDescription = null,
+                modifier = Modifier.size(52.dp),
+                tint = iconTint
+            )
+        }
+    }
+}
+
+@Composable
+private fun RatingSummary(averageRating: Float, ratingCount: Int) {
+    if (ratingCount <= 0) {
         Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            text = stringResource(R.string.detail_not_yet_rated),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        return
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        StarRow(rating = averageRating)
+        Spacer(Modifier.width(6.dp))
         Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
+            text = "%.1f".format(averageRating),
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.secondary
+        )
+        Spacer(Modifier.width(4.dp))
+        Text(
+            text = "(${"%,d".format(ratingCount)})",
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
 
+/** Renders 5 stars (full / half / empty) for a 0–5 [rating], in the amber accent. */
 @Composable
-fun ReviewCard(review: Review) {
+private fun StarRow(rating: Float, starSize: Int = 16) {
+    val rounded = (rating * 2).roundToInt()          // nearest half-star
+    Row {
+        for (i in 1..5) {
+            val icon = when {
+                rounded >= i * 2     -> Icons.Filled.Star
+                rounded == i * 2 - 1 -> Icons.AutoMirrored.Outlined.StarHalf
+                else                 -> Icons.Outlined.StarBorder
+            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(starSize.dp),
+                tint = MaterialTheme.colorScheme.secondary
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatGrid(detail: MediaDetail) {
+    val stats = buildList {
+        detail.publishedYear?.let { add(stringResource(R.string.detail_stat_year) to it.toString()) }
+        when (detail.mediaType) {
+            "book" -> detail.pageCount?.let {
+                add(stringResource(R.string.detail_stat_pages) to it.toString())
+            }
+            "movie" -> detail.runtimeMinutes?.let {
+                add(stringResource(R.string.detail_stat_runtime) to stringResource(R.string.detail_runtime_minutes, it))
+            }
+            "show" -> detail.seasonCount?.let {
+                add(stringResource(R.string.detail_stat_seasons) to it.toString())
+            }
+        }
+        detail.genres.firstOrNull()?.let {
+            add(stringResource(R.string.detail_stat_genre) to it)
+        }
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        stats.forEach { (label, value) ->
+            StatBox(label = label, value = value, modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun StatBox(label: String, value: String, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 12.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = label.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+private fun SectionCaption(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun ReviewCard(review: Review) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Avatar placeholder
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
+        Row(modifier = Modifier.padding(16.dp)) {
+            // Avatar
+            val displayName = review.user?.displayName ?: "?"
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = displayName.firstOrNull()?.uppercase() ?: "?",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+
+            Spacer(Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = review.user?.displayName?.firstOrNull()?.toString() ?: "?",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = review.user?.displayName ?: "Unknown User",
+                        text = review.user?.username?.let { "@$it" } ?: displayName,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
                     )
                     Text(
-                        text = "Jan 22, 2024", // Placeholder date formatting
+                        text = relativeTime(review.createdAt),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Spacer(Modifier.weight(1f))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    repeat(5) { index ->
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            tint = if (index < review.rating) Color(0xFFFFB400) else MaterialTheme.colorScheme.surfaceVariant,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
+                Spacer(Modifier.height(4.dp))
+                StarRow(rating = review.rating.toFloat(), starSize = 14)
+                if (!review.reviewText.isNullOrBlank()) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = review.reviewText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-            }
-            if (!review.reviewText.isNullOrBlank()) {
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = review.reviewText,
-                    style = MaterialTheme.typography.bodyMedium
-                )
             }
         }
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun MediaDetailPreview() {
-    MaterialTheme {
-        MediaDetailScreen(mediaId = 1, onNavigateBack = {}, onWriteReview = {})
-    }
-}
+/** Minimal ISO-8601 → date label. Real relative-time formatting arrives with API wiring. */
+private fun relativeTime(iso: String): String = iso.take(10)
