@@ -10,7 +10,7 @@ import retrofit2.Retrofit
 
 object RetrofitInstance {
 
-    private val json = Json {
+    internal val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults    = true
     }

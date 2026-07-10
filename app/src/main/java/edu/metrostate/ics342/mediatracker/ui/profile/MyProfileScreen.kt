@@ -13,12 +13,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import edu.metrostate.ics342.mediatracker.R
+import edu.metrostate.ics342.mediatracker.data.model.toIconRes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -143,16 +146,18 @@ fun MyProfileScreen(
                             Surface(color = MaterialTheme.colorScheme.surfaceVariant,
                                 modifier = Modifier.fillMaxSize()) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text(when (item.media.mediaType) {
-                                        "book" -> "📖"; "movie" -> "🎬"; "show" -> "📺"
-                                        else -> "?"
-                                    })
+                                    Icon(
+                                        painter = painterResource(item.media?.mediaType.toIconRes()),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                             }
                         }
                         Spacer(Modifier.width(12.dp))
                         Column {
-                            Text(item.media.title, style = MaterialTheme.typography.bodyMedium,
+                            Text(item.media?.title ?: "", style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium)
                             Text(stringResource(item.status.labelRes),
                                 style = MaterialTheme.typography.labelSmall,

@@ -30,7 +30,7 @@ fun SearchScreen(
     val selectedType by viewModel.selectedType.collectAsState()
 
     val popularItems = FakeMediaRepository.mediaList.filter { media ->
-        selectedType.isEmpty() || media.mediaType == selectedType
+        selectedType.isEmpty() || media.mediaType.apiString == selectedType
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
