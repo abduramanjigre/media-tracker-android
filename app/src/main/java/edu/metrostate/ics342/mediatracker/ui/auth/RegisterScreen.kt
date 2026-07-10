@@ -247,7 +247,7 @@ fun RegisterScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        
+
         Spacer(Modifier.height(48.dp))
     }
 }

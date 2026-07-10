@@ -11,5 +11,3 @@ interface UserApiService {
     @POST("tokens")
     suspend fun login(@Body body: LoginRequest): Response<AuthResponse>
 }
-
-
