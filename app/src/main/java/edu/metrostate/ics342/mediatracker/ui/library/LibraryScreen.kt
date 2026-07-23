@@ -33,11 +33,22 @@ fun LibraryScreen(
     viewModel: LibraryViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
     var selectedStatus by remember { mutableStateOf(LibraryStatus.WANT_TO) }
     var selectedType   by remember { mutableStateOf("all") }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(title = { Text(stringResource(edu.metrostate.ics342.mediatracker.R.string.library_title)) })
 
         Row(
@@ -119,7 +130,10 @@ fun LibraryScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            stringResource(edu.metrostate.ics342.mediatracker.R.string.library_empty),
+                            stringResource(
+                                edu.metrostate.ics342.mediatracker.R.string.library_empty_status,
+                                stringResource(selectedStatus.labelRes)
+                            ),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -150,6 +164,12 @@ fun LibraryScreen(
                 }
             }
         }
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier  = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
 

@@ -18,12 +18,17 @@ sealed interface LibraryUiState {
     data class Success(val items: List<LibraryItem>) : LibraryUiState
 }
 
-class LibraryViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val repository = DefaultMediaRepository(DefaultSessionRepository(application))
+class LibraryViewModel @JvmOverloads constructor(
+    application: Application,
+    private val repository: DefaultMediaRepository =
+        DefaultMediaRepository(DefaultSessionRepository(application))
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow<LibraryUiState>(LibraryUiState.Loading)
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     private var currentStatus = LibraryStatus.WANT_TO
 
@@ -46,15 +51,45 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
 
     fun retry() = loadLibrary(currentStatus)
 
-    fun removeItem(mediaId: Int) {
-        val current = _uiState.value as? LibraryUiState.Success ?: return
-        _uiState.value = current.copy(items = current.items.filter { it.mediaId != mediaId })
+    fun clearError() {
+        _errorMessage.value = null
     }
 
+    /** Optimistic: the item disappears instantly; DELETE /library/{mediaId} happens in the background. */
+    fun removeItem(mediaId: Int) {
+        val current = _uiState.value as? LibraryUiState.Success ?: return
+        val backup = current.items.find { it.mediaId == mediaId } ?: return
+        _uiState.value = current.copy(items = current.items.filter { it.mediaId != mediaId })
+        viewModelScope.launch {
+            try {
+                repository.removeFromLibrary(mediaId)
+            } catch (e: Exception) {
+                val latest = _uiState.value as? LibraryUiState.Success ?: return@launch
+                _uiState.value = latest.copy(items = latest.items + backup)
+                _errorMessage.value = "Couldn't remove item. Try again."
+            }
+        }
+    }
+
+    /**
+     * Optimistic: since the active tab already filters to [currentStatus] server-side, a status
+     * change away from that status makes the item disappear from the visible list instantly.
+     * PUT /library/{mediaId} happens in the background; a failure restores the item with its
+     * original status.
+     */
     fun updateStatus(mediaId: Int, newStatus: LibraryStatus) {
         val current = _uiState.value as? LibraryUiState.Success ?: return
-        _uiState.value = current.copy(items = current.items.map { item ->
-            if (item.mediaId == mediaId) item.copy(status = newStatus) else item
-        })
+        val backup = current.items.find { it.mediaId == mediaId } ?: return
+        if (backup.status == newStatus) return
+        _uiState.value = current.copy(items = current.items.filter { it.mediaId != mediaId })
+        viewModelScope.launch {
+            try {
+                repository.updateLibraryStatus(mediaId, newStatus)
+            } catch (e: Exception) {
+                val latest = _uiState.value as? LibraryUiState.Success ?: return@launch
+                _uiState.value = latest.copy(items = latest.items + backup)
+                _errorMessage.value = "Couldn't update status. Try again."
+            }
+        }
     }
 }

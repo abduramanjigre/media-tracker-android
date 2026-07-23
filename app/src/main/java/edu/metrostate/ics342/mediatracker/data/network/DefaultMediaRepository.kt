@@ -2,6 +2,7 @@ package edu.metrostate.ics342.mediatracker.data.network
 
 import edu.metrostate.ics342.mediatracker.data.SessionRepository
 import edu.metrostate.ics342.mediatracker.data.model.DuplicateFavoriteException
+import edu.metrostate.ics342.mediatracker.data.model.DuplicateLibraryException
 import edu.metrostate.ics342.mediatracker.data.model.ErrorResponse
 import edu.metrostate.ics342.mediatracker.data.model.Favorite
 import edu.metrostate.ics342.mediatracker.data.model.LibraryItem
@@ -67,13 +68,32 @@ class DefaultMediaRepository(sessionRepository: SessionRepository) {
         return response.body()
     }
 
+    /** Throws [DuplicateLibraryException] when the item is already in the library (HTTP 409). */
     suspend fun addToLibrary(mediaId: Int, status: LibraryStatus): LibraryItem {
         val response = api.addToLibrary(AddToLibraryRequest(mediaId, status))
+        if (response.code() == 409) throw DuplicateLibraryException()
         if (!response.isSuccessful) {
             val message = parseErrorMessage(response) ?: "Failed to add to library (${response.code()})"
             error(message)
         }
         return response.body() ?: error("Empty body adding mediaId $mediaId to library")
+    }
+
+    suspend fun updateLibraryStatus(mediaId: Int, status: LibraryStatus): LibraryItem {
+        val response = api.updateLibraryStatus(mediaId, UpdateLibraryStatusRequest(status))
+        if (!response.isSuccessful) {
+            val message = parseErrorMessage(response) ?: "Failed to update status (${response.code()})"
+            error(message)
+        }
+        return response.body() ?: error("Empty body updating status for mediaId $mediaId")
+    }
+
+    suspend fun removeFromLibrary(mediaId: Int) {
+        val response = api.removeFromLibrary(mediaId)
+        if (!response.isSuccessful) {
+            val message = parseErrorMessage(response) ?: "Failed to remove from library (${response.code()})"
+            error(message)
+        }
     }
 
     suspend fun getLibrary(status: LibraryStatus?, after: String? = null): LibraryPage {
@@ -105,6 +125,14 @@ class DefaultMediaRepository(sessionRepository: SessionRepository) {
             error(message)
         }
         return response.body() ?: error("Empty body adding mediaId $mediaId to favorites")
+    }
+
+    suspend fun removeFavorite(mediaId: Int) {
+        val response = api.removeFavorite(mediaId)
+        if (!response.isSuccessful) {
+            val message = parseErrorMessage(response) ?: "Failed to remove favorite (${response.code()})"
+            error(message)
+        }
     }
 
     suspend fun getReviews(mediaId: Int): List<Review> {

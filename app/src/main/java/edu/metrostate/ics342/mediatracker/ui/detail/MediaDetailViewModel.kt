@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import edu.metrostate.ics342.mediatracker.data.datastore.DefaultSessionRepository
 import edu.metrostate.ics342.mediatracker.data.model.DuplicateFavoriteException
+import edu.metrostate.ics342.mediatracker.data.model.DuplicateLibraryException
 import edu.metrostate.ics342.mediatracker.data.model.LibraryStatus
 import edu.metrostate.ics342.mediatracker.data.model.MediaDetail
 import edu.metrostate.ics342.mediatracker.data.model.MediaNotFoundException
@@ -24,18 +25,21 @@ sealed interface MediaDetailUiState {
         val detail: MediaDetail,
         val libraryStatus: LibraryStatus?,
         val isFavorited: Boolean,
-        val reviews: List<Review>,
-        val isAddingToLibrary: Boolean = false,
-        val isSavingFavorite: Boolean = false
+        val reviews: List<Review>
     ) : MediaDetailUiState
 }
 
-class MediaDetailViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val repository = DefaultMediaRepository(DefaultSessionRepository(application))
+class MediaDetailViewModel @JvmOverloads constructor(
+    application: Application,
+    private val repository: DefaultMediaRepository =
+        DefaultMediaRepository(DefaultSessionRepository(application))
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow<MediaDetailUiState>(MediaDetailUiState.Loading)
     val uiState: StateFlow<MediaDetailUiState> = _uiState.asStateFlow()
+
+    private val _actionError = MutableStateFlow<String?>(null)
+    val actionError: StateFlow<String?> = _actionError.asStateFlow()
 
     private var currentMediaId: Int? = null
 
@@ -76,44 +80,45 @@ class MediaDetailViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    /** Optimistic: the button flips to "in library" instantly; the POST happens in the background. */
     fun addToLibrary() {
         val current = _uiState.value as? MediaDetailUiState.Success ?: return
         val mediaId = currentMediaId ?: return
-        if (current.isAddingToLibrary) return
-        _uiState.value = current.copy(isAddingToLibrary = true)
+        if (current.libraryStatus != null) return
+        _uiState.value = current.copy(libraryStatus = LibraryStatus.WANT_TO)
         viewModelScope.launch {
             try {
-                val item = repository.addToLibrary(mediaId, LibraryStatus.WANT_TO)
-                val updated = _uiState.value as? MediaDetailUiState.Success ?: return@launch
-                _uiState.value = updated.copy(
-                    libraryStatus     = item.status,
-                    isAddingToLibrary = false
-                )
+                repository.addToLibrary(mediaId, LibraryStatus.WANT_TO)
+            } catch (e: DuplicateLibraryException) {
+                // Already in the library server-side — the optimistic state is already correct.
             } catch (e: Exception) {
                 val updated = _uiState.value as? MediaDetailUiState.Success ?: return@launch
-                _uiState.value = updated.copy(isAddingToLibrary = false)
+                _uiState.value = updated.copy(libraryStatus = null)
+                _actionError.value = "Couldn't add to library. Try again."
             }
         }
     }
 
-    fun saveFavorite() {
+    /** Optimistic: the heart flips instantly; POST/DELETE /favorites happens in the background. */
+    fun toggleFavorite() {
         val current = _uiState.value as? MediaDetailUiState.Success ?: return
         val mediaId = currentMediaId ?: return
-        if (current.isSavingFavorite || current.isFavorited) return
-        _uiState.value = current.copy(isSavingFavorite = true)
+        val wasFavorited = current.isFavorited
+        _uiState.value = current.copy(isFavorited = !wasFavorited)
         viewModelScope.launch {
             try {
-                repository.addFavorite(mediaId)
-                val updated = _uiState.value as? MediaDetailUiState.Success ?: return@launch
-                _uiState.value = updated.copy(isFavorited = true, isSavingFavorite = false)
+                if (wasFavorited) repository.removeFavorite(mediaId) else repository.addFavorite(mediaId)
             } catch (e: DuplicateFavoriteException) {
-                // Already favorited — treat it as success, not an error.
-                val updated = _uiState.value as? MediaDetailUiState.Success ?: return@launch
-                _uiState.value = updated.copy(isFavorited = true, isSavingFavorite = false)
+                // Already favorited server-side — the optimistic "favorited" state is already correct.
             } catch (e: Exception) {
                 val updated = _uiState.value as? MediaDetailUiState.Success ?: return@launch
-                _uiState.value = updated.copy(isSavingFavorite = false)
+                _uiState.value = updated.copy(isFavorited = wasFavorited)
+                _actionError.value = "Couldn't update favorite. Try again."
             }
         }
+    }
+
+    fun clearActionError() {
+        _actionError.value = null
     }
 }

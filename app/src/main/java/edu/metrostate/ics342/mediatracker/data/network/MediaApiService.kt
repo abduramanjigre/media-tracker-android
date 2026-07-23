@@ -33,11 +33,23 @@ interface MediaApiService {
     @POST("library")
     suspend fun addToLibrary(@Body body: AddToLibraryRequest): Response<LibraryItem>
 
+    @PUT("library/{mediaId}")
+    suspend fun updateLibraryStatus(
+        @Path("mediaId") mediaId: Int,
+        @Body body: UpdateLibraryStatusRequest
+    ): Response<LibraryItem>
+
+    @DELETE("library/{mediaId}")
+    suspend fun removeFromLibrary(@Path("mediaId") mediaId: Int): Response<Unit>
+
     @GET("favorites/{mediaId}")
     suspend fun getFavorite(@Path("mediaId") mediaId: Int): Response<Favorite>
 
     @POST("favorites")
     suspend fun addFavorite(@Body body: AddToFavoritesRequest): Response<Favorite>
+
+    @DELETE("favorites/{mediaId}")
+    suspend fun removeFavorite(@Path("mediaId") mediaId: Int): Response<Unit>
 
     @GET("reviews")
     suspend fun getReviews(@Query("mediaId") mediaId: Int): Response<List<Review>>
