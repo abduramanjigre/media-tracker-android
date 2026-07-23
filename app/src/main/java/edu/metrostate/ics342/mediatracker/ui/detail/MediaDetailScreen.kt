@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.MoreVert
@@ -111,8 +112,9 @@ fun MediaDetailScreen(
 
             is MediaDetailUiState.Success -> {
                 SuccessContent(
-                    state         = state,
+                    state          = state,
                     onAddToLibrary = { viewModel.addToLibrary() },
+                    onSaveFavorite = { viewModel.saveFavorite() },
                     onWriteReview  = onWriteReview
                 )
             }
@@ -124,6 +126,7 @@ fun MediaDetailScreen(
 private fun SuccessContent(
     state: MediaDetailUiState.Success,
     onAddToLibrary: () -> Unit,
+    onSaveFavorite: () -> Unit,
     onWriteReview: (Int) -> Unit
 ) {
     val detail = state.detail
@@ -192,17 +195,40 @@ private fun SuccessContent(
                     }
                 }
             }
-            OutlinedButton(
-                onClick  = { /* TODO: save */ },
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(
-                    Icons.Outlined.FavoriteBorder,
-                    contentDescription = null,
-                    modifier           = Modifier.size(18.dp)
-                )
-                Spacer(Modifier.width(6.dp))
-                Text(stringResource(R.string.detail_save))
+            if (state.isFavorited) {
+                FilledTonalButton(
+                    onClick  = { /* already saved — unsaving is a stretch */ },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        Icons.Filled.Favorite,
+                        contentDescription = null,
+                        modifier           = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.detail_saved))
+                }
+            } else {
+                OutlinedButton(
+                    onClick  = onSaveFavorite,
+                    enabled  = !state.isSavingFavorite,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    if (state.isSavingFavorite) {
+                        CircularProgressIndicator(
+                            modifier    = Modifier.size(18.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            Icons.Outlined.FavoriteBorder,
+                            contentDescription = null,
+                            modifier           = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.detail_save))
+                    }
+                }
             }
         }
 

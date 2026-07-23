@@ -32,8 +32,7 @@ fun LibraryScreen(
     onMediaClick: (Int) -> Unit,
     viewModel: LibraryViewModel = viewModel()
 ) {
-    val items     by viewModel.libraryItems.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     var selectedStatus by remember { mutableStateOf(LibraryStatus.WANT_TO) }
     var selectedType   by remember { mutableStateOf("all") }
@@ -72,7 +71,10 @@ fun LibraryScreen(
                     shape    = SegmentedButtonDefaults.itemShape(
                         index = index, count = LibraryStatus.values().size),
                     selected = selectedStatus == status,
-                    onClick  = { selectedStatus = status },
+                    onClick  = {
+                        selectedStatus = status
+                        viewModel.loadLibrary(status)
+                    },
                     label    = { Text(stringResource(status.labelRes)) }
                 )
             }
@@ -80,51 +82,72 @@ fun LibraryScreen(
 
         HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
 
-        if (isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+        when (val state = uiState) {
+            is LibraryUiState.Loading -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             }
-            return@Column
-        }
 
-        val filteredItems = items
-            .filter { it.status == selectedStatus }
-            .filter { selectedType == "all" || it.media?.mediaType?.apiString == selectedType }
-
-        if (filteredItems.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    stringResource(edu.metrostate.ics342.mediatracker.R.string.library_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
+            is LibraryUiState.Error -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text  = state.message,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Button(onClick = { viewModel.retry() }) {
+                            Text(stringResource(edu.metrostate.ics342.mediatracker.R.string.detail_retry))
+                        }
+                    }
+                }
             }
-            return@Column
-        }
 
-        Text(
-            if (filteredItems.size == 1) stringResource(edu.metrostate.ics342.mediatracker.R.string.library_item_count, filteredItems.size)
-            else stringResource(edu.metrostate.ics342.mediatracker.R.string.library_items_count, filteredItems.size),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            style    = MaterialTheme.typography.labelMedium,
-            color    = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+            is LibraryUiState.Success -> {
+                val filteredItems = state.items
+                    .filter { selectedType == "all" || it.media?.mediaType?.apiString == selectedType }
 
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(filteredItems, key = { it.mediaId }) { item ->
-                LibraryItemCard(
-                    item           = item,
-                    onClick        = { onMediaClick(item.mediaId) },
-                    onRemove       = { viewModel.removeItem(item.mediaId) },
-                    onStatusChange = { newStatus -> viewModel.updateStatus(item.mediaId, newStatus) }
-                )
+                if (filteredItems.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            stringResource(edu.metrostate.ics342.mediatracker.R.string.library_empty),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                } else {
+                    Text(
+                        if (filteredItems.size == 1) stringResource(edu.metrostate.ics342.mediatracker.R.string.library_item_count, filteredItems.size)
+                        else stringResource(edu.metrostate.ics342.mediatracker.R.string.library_items_count, filteredItems.size),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        style    = MaterialTheme.typography.labelMedium,
+                        color    = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    LazyColumn(
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(filteredItems, key = { it.mediaId }) { item ->
+                            LibraryItemCard(
+                                item           = item,
+                                onClick        = { onMediaClick(item.mediaId) },
+                                onRemove       = { viewModel.removeItem(item.mediaId) },
+                                onStatusChange = { newStatus -> viewModel.updateStatus(item.mediaId, newStatus) }
+                            )
+                        }
+                    }
+                }
             }
         }
     }

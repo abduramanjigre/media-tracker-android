@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import edu.metrostate.ics342.mediatracker.data.datastore.DefaultSessionRepository
+import edu.metrostate.ics342.mediatracker.data.model.DuplicateFavoriteException
 import edu.metrostate.ics342.mediatracker.data.model.LibraryStatus
 import edu.metrostate.ics342.mediatracker.data.model.MediaDetail
 import edu.metrostate.ics342.mediatracker.data.model.MediaNotFoundException
@@ -22,8 +23,10 @@ sealed interface MediaDetailUiState {
     data class Success(
         val detail: MediaDetail,
         val libraryStatus: LibraryStatus?,
+        val isFavorited: Boolean,
         val reviews: List<Review>,
-        val isAddingToLibrary: Boolean = false
+        val isAddingToLibrary: Boolean = false,
+        val isSavingFavorite: Boolean = false
     ) : MediaDetailUiState
 }
 
@@ -40,22 +43,25 @@ class MediaDetailViewModel(application: Application) : AndroidViewModel(applicat
         currentMediaId = mediaId
         _uiState.value = MediaDetailUiState.Loading
         viewModelScope.launch {
-            // All three start concurrently. Library and reviews are best-effort:
+            // All four start concurrently. Library, favorite, and reviews are best-effort:
             // their failures are swallowed so only the detail request can fail the screen.
-            val detailDeferred  = async { repository.getMediaDetail(mediaId) }
-            val libraryDeferred = async { runCatching { repository.getLibraryItem(mediaId) }.getOrNull() }
-            val reviewsDeferred = async { runCatching { repository.getReviews(mediaId) }.getOrElse { emptyList() } }
+            val detailDeferred   = async { repository.getMediaDetail(mediaId) }
+            val libraryDeferred  = async { runCatching { repository.getLibraryItem(mediaId) }.getOrNull() }
+            val favoriteDeferred = async { runCatching { repository.getFavorite(mediaId) }.getOrNull() }
+            val reviewsDeferred  = async { runCatching { repository.getReviews(mediaId) }.getOrElse { emptyList() } }
 
             // Await detail first — if it fails fast we don't block on slower secondary calls.
             val detail = try {
                 detailDeferred.await()
             } catch (e: MediaNotFoundException) {
                 libraryDeferred.cancel()
+                favoriteDeferred.cancel()
                 reviewsDeferred.cancel()
                 _uiState.value = MediaDetailUiState.NotFound
                 return@launch
             } catch (e: Exception) {
                 libraryDeferred.cancel()
+                favoriteDeferred.cancel()
                 reviewsDeferred.cancel()
                 _uiState.value = MediaDetailUiState.Error(e.message ?: "Unknown error")
                 return@launch
@@ -64,6 +70,7 @@ class MediaDetailViewModel(application: Application) : AndroidViewModel(applicat
             _uiState.value = MediaDetailUiState.Success(
                 detail        = detail,
                 libraryStatus = libraryDeferred.await()?.status,
+                isFavorited   = favoriteDeferred.await() != null,
                 reviews       = reviewsDeferred.await()
             )
         }
@@ -85,6 +92,27 @@ class MediaDetailViewModel(application: Application) : AndroidViewModel(applicat
             } catch (e: Exception) {
                 val updated = _uiState.value as? MediaDetailUiState.Success ?: return@launch
                 _uiState.value = updated.copy(isAddingToLibrary = false)
+            }
+        }
+    }
+
+    fun saveFavorite() {
+        val current = _uiState.value as? MediaDetailUiState.Success ?: return
+        val mediaId = currentMediaId ?: return
+        if (current.isSavingFavorite || current.isFavorited) return
+        _uiState.value = current.copy(isSavingFavorite = true)
+        viewModelScope.launch {
+            try {
+                repository.addFavorite(mediaId)
+                val updated = _uiState.value as? MediaDetailUiState.Success ?: return@launch
+                _uiState.value = updated.copy(isFavorited = true, isSavingFavorite = false)
+            } catch (e: DuplicateFavoriteException) {
+                // Already favorited — treat it as success, not an error.
+                val updated = _uiState.value as? MediaDetailUiState.Success ?: return@launch
+                _uiState.value = updated.copy(isFavorited = true, isSavingFavorite = false)
+            } catch (e: Exception) {
+                val updated = _uiState.value as? MediaDetailUiState.Success ?: return@launch
+                _uiState.value = updated.copy(isSavingFavorite = false)
             }
         }
     }

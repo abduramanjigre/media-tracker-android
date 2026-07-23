@@ -1,7 +1,9 @@
 package edu.metrostate.ics342.mediatracker.data.network
 
 import edu.metrostate.ics342.mediatracker.data.SessionRepository
+import edu.metrostate.ics342.mediatracker.data.model.DuplicateFavoriteException
 import edu.metrostate.ics342.mediatracker.data.model.ErrorResponse
+import edu.metrostate.ics342.mediatracker.data.model.Favorite
 import edu.metrostate.ics342.mediatracker.data.model.LibraryItem
 import edu.metrostate.ics342.mediatracker.data.model.LibraryStatus
 import edu.metrostate.ics342.mediatracker.data.model.Media
@@ -12,6 +14,12 @@ import retrofit2.Response
 
 data class MediaPage(
     val items: List<Media>,
+    val nextCursor: String?,
+    val hasMore: Boolean
+)
+
+data class LibraryPage(
+    val items: List<LibraryItem>,
     val nextCursor: String?,
     val hasMore: Boolean
 )
@@ -66,6 +74,37 @@ class DefaultMediaRepository(sessionRepository: SessionRepository) {
             error(message)
         }
         return response.body() ?: error("Empty body adding mediaId $mediaId to library")
+    }
+
+    suspend fun getLibrary(status: LibraryStatus?, after: String? = null): LibraryPage {
+        val response = api.getLibrary(status = status?.toApiString(), after = after)
+        if (!response.isSuccessful) {
+            val message = parseErrorMessage(response) ?: "Failed to load library (${response.code()})"
+            error(message)
+        }
+        val items      = response.body() ?: emptyList()
+        val nextCursor = response.headers()["X-Next-Cursor"]
+        val hasMore    = response.headers()["X-Has-More"] == "true"
+        return LibraryPage(items, nextCursor, hasMore)
+    }
+
+    /** Returns null when the item is not favorited (HTTP 404). Throws for other errors. */
+    suspend fun getFavorite(mediaId: Int): Favorite? {
+        val response = api.getFavorite(mediaId)
+        if (response.code() == 404) return null
+        if (!response.isSuccessful) error("Failed to load favorite: ${response.code()}")
+        return response.body()
+    }
+
+    /** Throws [DuplicateFavoriteException] when the item is already favorited (HTTP 409). */
+    suspend fun addFavorite(mediaId: Int): Favorite {
+        val response = api.addFavorite(AddToFavoritesRequest(mediaId))
+        if (response.code() == 409) throw DuplicateFavoriteException()
+        if (!response.isSuccessful) {
+            val message = parseErrorMessage(response) ?: "Failed to save favorite (${response.code()})"
+            error(message)
+        }
+        return response.body() ?: error("Empty body adding mediaId $mediaId to favorites")
     }
 
     suspend fun getReviews(mediaId: Int): List<Review> {
