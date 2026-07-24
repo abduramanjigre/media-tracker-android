@@ -1,5 +1,5 @@
 package edu.metrostate.ics342.mediatracker.data
-
+/*
 import edu.metrostate.ics342.mediatracker.data.model.Media
 
 val fakeSearchResults: List<Media> = List(60) { listOf(
@@ -69,3 +69,5 @@ val fakeSearchResults: List<Media> = List(60) { listOf(
     Media(id = 59, mediaType = "show",  title = "Fringe",                 creator = "J.J. Abrams",           network = "Fox",        publishedYear = 2008, averageRating = 4.4f, ratingCount = 876,  genres = listOf("Science Fiction", "Thriller")),
     Media(id = 60, mediaType = "show",  title = "Mindhunter",             creator = "Joe Penhall",           network = "Netflix",    publishedYear = 2017, averageRating = 4.6f, ratingCount = 1034, genres = listOf("Crime", "Thriller", "Drama")),
 ) }.flatten()
+
+ */
