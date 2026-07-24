@@ -24,43 +24,43 @@ object FakeMediaRepository {
     )
 
     val mediaList = listOf(
-        Media(id = 1,  mediaType = "book",  title = "The Hitchhiker's Guide to the Galaxy",
+        Media(id = 1,  mediaType = MediaType.BOOK,  title = "The Hitchhiker's Guide to the Galaxy",
             author = "Douglas Adams", publishedYear = 1979,
             averageRating = 4.7f, ratingCount = 312,
             genres = listOf("Science Fiction", "Comedy")),
-        Media(id = 2,  mediaType = "book",  title = "Project Hail Mary",
+        Media(id = 2,  mediaType = MediaType.BOOK,  title = "Project Hail Mary",
             author = "Andy Weir", publishedYear = 2021,
             averageRating = 4.9f, ratingCount = 478,
             genres = listOf("Science Fiction", "Adventure")),
-        Media(id = 3,  mediaType = "book",  title = "The Name of the Wind",
+        Media(id = 3,  mediaType = MediaType.BOOK,  title = "The Name of the Wind",
             author = "Patrick Rothfuss", publishedYear = 2007,
             averageRating = 4.6f, ratingCount = 291,
             genres = listOf("Fantasy", "Adventure")),
-        Media(id = 4,  mediaType = "book",  title = "Dune",
+        Media(id = 4,  mediaType = MediaType.BOOK,  title = "Dune",
             author = "Frank Herbert", publishedYear = 1965,
             averageRating = 4.8f, ratingCount = 521,
             genres = listOf("Science Fiction", "Epic")),
-        Media(id = 5,  mediaType = "movie", title = "Arrival",
+        Media(id = 5,  mediaType = MediaType.MOVIE, title = "Arrival",
             director = "Denis Villeneuve", publishedYear = 2016,
             averageRating = 4.5f, ratingCount = 263,
             genres = listOf("Science Fiction", "Drama")),
-        Media(id = 6,  mediaType = "movie", title = "Everything Everywhere All at Once",
+        Media(id = 6,  mediaType = MediaType.MOVIE, title = "Everything Everywhere All at Once",
             director = "Daniel Kwan, Daniel Scheinert", publishedYear = 2022,
             averageRating = 4.8f, ratingCount = 389,
             genres = listOf("Science Fiction", "Comedy", "Drama")),
-        Media(id = 7,  mediaType = "movie", title = "Interstellar",
+        Media(id = 7,  mediaType = MediaType.MOVIE, title = "Interstellar",
             director = "Christopher Nolan", publishedYear = 2014,
             averageRating = 4.6f, ratingCount = 441,
             genres = listOf("Science Fiction", "Adventure")),
-        Media(id = 8,  mediaType = "show",  title = "Severance",
+        Media(id = 8,  mediaType = MediaType.SHOW,  title = "Severance",
             creator = "Dan Erickson", network = "Apple TV+", publishedYear = 2022,
             averageRating = 4.9f, ratingCount = 317,
             genres = listOf("Thriller", "Science Fiction", "Drama")),
-        Media(id = 9,  mediaType = "show",  title = "The Bear",
+        Media(id = 9,  mediaType = MediaType.SHOW,  title = "The Bear",
             creator = "Christopher Storer", network = "FX on Hulu", publishedYear = 2022,
             averageRating = 4.8f, ratingCount = 298,
             genres = listOf("Drama", "Comedy")),
-        Media(id = 10, mediaType = "show",  title = "Andor",
+        Media(id = 10, mediaType = MediaType.SHOW,  title = "Andor",
             creator = "Tony Gilroy", network = "Disney+", publishedYear = 2022,
             averageRating = 4.7f, ratingCount = 276,
             genres = listOf("Science Fiction", "Drama", "Action")),
@@ -96,4 +96,51 @@ object FakeMediaRepository {
 
     val followers = listOf(userJordan, userPriya)
     val following = listOf(userMarco, userSarah)
+
+    /**
+     * Hardcoded Media Detail response used by the Media Detail screen until it is
+     * wired to GET /media/{id}. Core fields match the seeded catalog entry for
+     * "Dune: Part Two"; the movie-specific extras (description, runtime, review
+     * count) are filled in to complete the [MediaDetail] payload.
+     */
+    val sampleMediaDetail = MediaDetail(
+        id            = 1080,
+        mediaType     = MediaType.MOVIE,
+        title         = "Dune: Part Two",
+        director      = "Denis Villeneuve",
+        coverUrl      = "https://image.tmdb.org/t/p/w300/heM4XKC0jA8fTSNe8F7oUkcJV7Z.jpg",
+        publishedYear = 2024,
+        averageRating = 0.0f,
+        ratingCount   = 0,
+        genres        = listOf("Science Fiction", "Action"),
+        description   = "Paul Atreides unites with Chani and the Fremen while seeking " +
+                "revenge against the conspirators who destroyed his family. Facing a choice " +
+                "between the love of his life and the fate of the known universe, he endeavors " +
+                "to prevent a terrible future only he can foresee.",
+        runtimeMinutes = 166,
+        reviewCount    = 2
+    )
+
+    /**
+     * Hardcoded reviews for [sampleMediaDetail]. Stands in for GET /reviews?mediaId=1080
+     * until the Media Detail screen is wired to the API.
+     */
+    val sampleReviews = listOf(
+        Review(
+            userId     = "user-003",
+            mediaId    = 1080,
+            rating     = 5,
+            reviewText = "A staggering achievement — bigger, bolder, and more emotional than Part One.",
+            createdAt  = "2024-03-04T09:00:00Z",
+            user       = userPriya
+        ),
+        Review(
+            userId     = "user-004",
+            mediaId    = 1080,
+            rating     = 4,
+            reviewText = "Gorgeous to look at and thunderously scored. Drags a little in the middle.",
+            createdAt  = "2024-03-02T18:30:00Z",
+            user       = userMarco
+        ),
+    )
 }
