@@ -13,12 +13,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import edu.metrostate.ics342.mediatracker.R
 import edu.metrostate.ics342.mediatracker.data.model.ActivityEvent
+import edu.metrostate.ics342.mediatracker.data.model.toIconRes
 import edu.metrostate.ics342.mediatracker.data.model.descriptionText
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -150,12 +153,12 @@ private fun ActivityCard(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text(when (event.media?.mediaType) {
-                                "book"  -> "📖"
-                                "movie" -> "🎬"
-                                "show"  -> "📺"
-                                else    -> "?"
-                            }, style = MaterialTheme.typography.titleMedium)
+                            Icon(
+                                painter = painterResource(event.media?.mediaType.toIconRes()),
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
