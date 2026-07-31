@@ -61,3 +61,4 @@ interface MediaApiService {
     @GET("reviews")
     suspend fun getReviews(@Query("mediaId") mediaId: Int): Response<List<Review>>
 }
+

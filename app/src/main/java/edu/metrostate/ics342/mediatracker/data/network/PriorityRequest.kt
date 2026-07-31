@@ -10,3 +10,4 @@ data class PriorityRequest(
     val estimatedTimeHours: Int? = null,
     val notes: String? = null
 )
+
