@@ -65,6 +65,7 @@ class LibraryViewModel @JvmOverloads constructor(
     }
 
     fun addPriority(mediaId: Int, priorityLevel: Int, hours: Int?) {
+        if (mediaId <= 0) return
         val current = _uiState.value as? LibraryUiState.Success ?: return
         if (current.priorities.size >= 5) {
             _errorMessage.value = "Priority list is full (max 5 items)"
@@ -93,6 +94,28 @@ class LibraryViewModel @JvmOverloads constructor(
         }
     }
 
+    fun updatePriority(mediaId: Int, priorityLevel: Int, hours: Int?) {
+        val current = _uiState.value as? LibraryUiState.Success ?: return
+        val newList = current.priorities.map {
+            if (it.mediaId == mediaId) {
+                it.copy(priority = priorityLevel, estimatedTimeHours = hours)
+            } else {
+                it
+            }
+        }
+        
+        _uiState.value = current.copy(priorities = newList)
+
+        viewModelScope.launch {
+            try {
+                repository.updatePriorities(newList)
+            } catch (e: Exception) {
+                _uiState.value = current // Revert
+                _errorMessage.value = e.message ?: "Couldn't update priority. Try again."
+            }
+        }
+    }
+
     fun removePriority(mediaId: Int) {
         val current = _uiState.value as? LibraryUiState.Success ?: return
         val newList = current.priorities.filter { it.mediaId != mediaId }
@@ -113,7 +136,7 @@ class LibraryViewModel @JvmOverloads constructor(
     fun movePriority(fromIndex: Int, toIndex: Int) {
         val current = _uiState.value as? LibraryUiState.Success ?: return
         val newList = current.priorities.toMutableList()
-        if (fromIndex !in newList.indices || toIndex !in newList.indices) return
+        if (fromIndex !in newList.indices || toIndex !in newList.indices || fromIndex == toIndex) return
         
         val item = newList.removeAt(fromIndex)
         newList.add(toIndex, item)
@@ -133,14 +156,23 @@ class LibraryViewModel @JvmOverloads constructor(
 
     fun removeItem(mediaId: Int) {
         val current = _uiState.value as? LibraryUiState.Success ?: return
-        val backup = current.items.find { it.mediaId == mediaId } ?: return
-        _uiState.value = current.copy(items = current.items.filter { it.mediaId != mediaId })
+        val backupItems = current.items
+        val backupPriorities = current.priorities
+        
+        val newItems = current.items.filter { it.mediaId != mediaId }
+        val newPriorities = current.priorities.filter { it.mediaId != mediaId }
+            .mapIndexed { index, p -> p.copy(orderIndex = index) }
+
+        _uiState.value = current.copy(items = newItems, priorities = newPriorities)
+        
         viewModelScope.launch {
             try {
                 repository.removeFromLibrary(mediaId)
+                if (backupPriorities.any { it.mediaId == mediaId }) {
+                    repository.updatePriorities(newPriorities)
+                }
             } catch (e: Exception) {
-                val latest = _uiState.value as? LibraryUiState.Success ?: return@launch
-                _uiState.value = latest.copy(items = latest.items + backup)
+                _uiState.value = current.copy(items = backupItems, priorities = backupPriorities)
                 _errorMessage.value = "Couldn't remove item. Try again."
             }
         }
@@ -154,15 +186,30 @@ class LibraryViewModel @JvmOverloads constructor(
      */
     fun updateStatus(mediaId: Int, newStatus: LibraryStatus) {
         val current = _uiState.value as? LibraryUiState.Success ?: return
-        val backup = current.items.find { it.mediaId == mediaId } ?: return
-        if (backup.status == newStatus) return
-        _uiState.value = current.copy(items = current.items.filter { it.mediaId != mediaId })
+        val backupItems = current.items
+        val backupPriorities = current.priorities
+        
+        val itemToUpdate = current.items.find { it.mediaId == mediaId } ?: return
+        if (itemToUpdate.status == newStatus) return
+        
+        val newItems = current.items.filter { it.mediaId != mediaId }
+        val newPriorities = if (newStatus != LibraryStatus.WANT_TO) {
+            current.priorities.filter { it.mediaId != mediaId }
+                .mapIndexed { index, p -> p.copy(orderIndex = index) }
+        } else {
+            current.priorities
+        }
+
+        _uiState.value = current.copy(items = newItems, priorities = newPriorities)
+        
         viewModelScope.launch {
             try {
                 repository.updateLibraryStatus(mediaId, newStatus)
+                if (newStatus != LibraryStatus.WANT_TO && backupPriorities.any { it.mediaId == mediaId }) {
+                    repository.updatePriorities(newPriorities)
+                }
             } catch (e: Exception) {
-                val latest = _uiState.value as? LibraryUiState.Success ?: return@launch
-                _uiState.value = latest.copy(items = latest.items + backup)
+                _uiState.value = current.copy(items = backupItems, priorities = backupPriorities)
                 _errorMessage.value = "Couldn't update status. Try again."
             }
         }

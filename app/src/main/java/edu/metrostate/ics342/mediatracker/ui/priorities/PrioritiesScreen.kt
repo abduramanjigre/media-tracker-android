@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DragIndicator
-import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -28,6 +28,13 @@ import edu.metrostate.ics342.mediatracker.data.model.Priority
 import edu.metrostate.ics342.mediatracker.ui.library.LibraryUiState
 import edu.metrostate.ics342.mediatracker.ui.library.LibraryViewModel
 
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.zIndex
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PrioritiesScreen(
@@ -36,7 +43,52 @@ fun PrioritiesScreen(
     viewModel: LibraryViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedFilter by remember { mutableIntStateOf(0) } // 0=All, 1=High, 2=Medium, 3=Low
+    var selectedFilter by remember { mutableIntStateOf(0) }
+    val listState = rememberLazyListState()
+
+    var draggedItemIndex by remember { mutableStateOf<Int?>(null) }
+    var draggingOffset by remember { mutableFloatStateOf(0f) }
+
+    // Dialog state
+    var editingPriority by remember { mutableStateOf<Priority?>(null) }
+
+    // Use updated state to avoid restarting pointerInput when priorities change
+    val updatedFilter by rememberUpdatedState(selectedFilter)
+
+    if (editingPriority != null) {
+        val priority = editingPriority!!
+        var level by remember { mutableIntStateOf(priority.priority) }
+        AlertDialog(
+            onDismissRequest = { editingPriority = null },
+            title = { Text("Edit Priority") },
+            text = {
+                Column {
+                    Text("Urgency Level (1-3)", style = MaterialTheme.typography.labelMedium)
+                    Row {
+                        (1..3).forEach { l ->
+                            FilterChip(
+                                selected = level == l,
+                                onClick = { level = l },
+                                label = { Text(l.toString()) },
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = { 
+                    viewModel.updatePriority(priority.mediaId, level, null)
+                    editingPriority = null 
+                }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingPriority = null }) { Text("Cancel") }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -45,11 +97,6 @@ fun PrioritiesScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* TODO: Filter options */ }) {
-                        Icon(Icons.Outlined.FilterList, contentDescription = "Filter")
                     }
                 }
             )
@@ -61,7 +108,6 @@ fun PrioritiesScreen(
                 .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
         ) {
-            // Filter Chips
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -93,12 +139,14 @@ fun PrioritiesScreen(
                 )
             }
 
-            Text(
-                text = "Drag to reorder",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
+            if (selectedFilter == 0 && uiState is LibraryUiState.Success && (uiState as LibraryUiState.Success).priorities.isNotEmpty()) {
+                Text(
+                    text = "Long press and drag to reorder",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
 
             when (val state = uiState) {
                 is LibraryUiState.Loading -> {
@@ -115,19 +163,79 @@ fun PrioritiesScreen(
 
                     if (filteredPriorities.isEmpty()) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No priorities found", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = "No priorities set — mark a 'Want To' item as a priority to see it here.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                modifier = Modifier.padding(32.dp)
+                            )
                         }
                     } else {
                         LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
+                            state = listState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .pointerInput(Unit) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = { offset ->
+                                            if (updatedFilter != 0) return@detectDragGesturesAfterLongPress
+                                            listState.layoutInfo.visibleItemsInfo
+                                                .firstOrNull { item ->
+                                                    offset.y.toInt() in item.offset..(item.offset + item.size)
+                                                }
+                                                ?.let {
+                                                    draggedItemIndex = it.index
+                                                }
+                                        },
+                                        onDrag = { change, dragAmount ->
+                                            if (updatedFilter != 0) return@detectDragGesturesAfterLongPress
+                                            change.consume()
+                                            draggingOffset += dragAmount.y
+
+                                            val currentDraggedIndex = draggedItemIndex ?: return@detectDragGesturesAfterLongPress
+                                            val currentItemInfo = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == currentDraggedIndex } ?: return@detectDragGesturesAfterLongPress
+                                            
+                                            val draggedCenter = currentItemInfo.offset + draggingOffset + currentItemInfo.size / 2
+                                            
+                                            val targetItemInfo = listState.layoutInfo.visibleItemsInfo.find { item ->
+                                                draggedCenter.roundToInt() in item.offset..(item.offset + item.size) && item.index != currentDraggedIndex
+                                            }
+
+                                            if (targetItemInfo != null) {
+                                                viewModel.movePriority(currentDraggedIndex, targetItemInfo.index)
+                                                draggedItemIndex = targetItemInfo.index
+                                                draggingOffset = 0f
+                                            }
+                                        },
+                                        onDragEnd = {
+                                            draggedItemIndex = null
+                                            draggingOffset = 0f
+                                        },
+                                        onDragCancel = {
+                                            draggedItemIndex = null
+                                            draggingOffset = 0f
+                                        }
+                                    )
+                                },
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            itemsIndexed(filteredPriorities, key = { _, p -> p.mediaId }) { _, priority ->
+                            itemsIndexed(filteredPriorities, key = { _, p -> p.mediaId }) { index, priority ->
+                                val isDragging = draggedItemIndex == index
                                 PriorityCard(
                                     priority = priority,
                                     onClick = { onMediaClick(priority.mediaId) },
-                                    onRemove = { viewModel.removePriority(priority.mediaId) }
+                                    onEdit = { editingPriority = priority },
+                                    onRemove = { viewModel.removePriority(priority.mediaId) },
+                                    modifier = Modifier
+                                        .graphicsLayer {
+                                            translationY = if (isDragging) draggingOffset else 0f
+                                            scaleX = if (isDragging) 1.05f else 1f
+                                            scaleY = if (isDragging) 1.05f else 1f
+                                            alpha = if (isDragging) 0.9f else 1f
+                                            shadowElevation = if (isDragging) 8.dp.toPx() else 0f
+                                        }
+                                        .zIndex(if (isDragging) 1f else 0f)
                                 )
                             }
                         }
@@ -135,7 +243,13 @@ fun PrioritiesScreen(
                 }
                 is LibraryUiState.Error -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(state.message, color = MaterialTheme.colorScheme.error)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(state.message, color = MaterialTheme.colorScheme.error)
+                            Spacer(Modifier.height(16.dp))
+                            Button(onClick = { viewModel.retry() }) {
+                                Text("Retry")
+                            }
+                        }
                     }
                 }
             }
@@ -185,10 +299,14 @@ fun PriorityFilterChip(
 fun PriorityCard(
     priority: Priority,
     onClick: () -> Unit,
-    onRemove: () -> Unit
+    onEdit: () -> Unit,
+    onRemove: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
@@ -204,7 +322,7 @@ fun PriorityCard(
             Icon(
                 imageVector = Icons.Default.DragIndicator,
                 contentDescription = "Reorder",
-                tint = Color(0xFFBDBDBD),
+                tint = Color(0xFF9E9E9E), // Darker gray for better visibility
                 modifier = Modifier.size(24.dp)
             )
             
@@ -284,12 +402,27 @@ fun PriorityCard(
                 }
             }
 
-            IconButton(onClick = onRemove) {
-                Icon(
-                    imageVector = Icons.Outlined.MoreVert,
-                    contentDescription = "Options",
-                    tint = Color(0xFFBDBDBD)
-                )
+            Box {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(
+                        imageVector = Icons.Outlined.MoreVert,
+                        contentDescription = "Options",
+                        tint = Color(0xFF757575) // Darker gray for better visibility
+                    )
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Edit Priority") },
+                        onClick = { menuExpanded = false; onEdit() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Remove from Priorities") },
+                        onClick = { menuExpanded = false; onRemove() }
+                    )
+                }
             }
         }
     }

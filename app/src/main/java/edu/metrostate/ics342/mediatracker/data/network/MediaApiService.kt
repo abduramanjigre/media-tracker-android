@@ -56,7 +56,7 @@ interface MediaApiService {
     suspend fun getPriorities(): Response<List<Priority>>
 
     @PUT("priorities")
-    suspend fun updatePriority(@Body body: PriorityRequest): Response<Unit>
+    suspend fun updatePriorities(@Body body: List<PriorityRequest>): Response<Unit>
 
     @GET("reviews")
     suspend fun getReviews(@Query("mediaId") mediaId: Int): Response<List<Review>>

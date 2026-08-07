@@ -6,9 +6,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class AddToLibraryRequest(
-    @SerialName("media_id")
-    val mediaId: Int,
+data class UpdateLibraryStatusRequest(
     @SerialName("status")
     @Serializable(with = LibraryStatusSerializer::class)
     val status: LibraryStatus

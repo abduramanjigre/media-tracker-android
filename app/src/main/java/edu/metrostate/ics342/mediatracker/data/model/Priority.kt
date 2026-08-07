@@ -20,4 +20,3 @@ fun Priority.toRequest() = PriorityRequest(
     estimatedTimeHours = estimatedTimeHours,
     notes = notes
 )
-

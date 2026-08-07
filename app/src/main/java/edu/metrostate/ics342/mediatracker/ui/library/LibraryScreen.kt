@@ -151,6 +151,7 @@ fun LibraryScreen(
                                 PriorityItemCard(
                                     priority = priority,
                                     onClick = { onMediaClick(priority.mediaId) },
+                                    onEdit = { level, hours -> viewModel.updatePriority(priority.mediaId, level, hours) },
                                     onRemove = { viewModel.removePriority(priority.mediaId) }
                                 )
                             }
@@ -189,13 +190,20 @@ fun LibraryScreen(
 
                             items(filteredItems, key = { it.mediaId }) { item ->
                                 val isPriority = state.priorities.any { it.mediaId == item.mediaId }
+                                val priorityInfo = state.priorities.find { it.mediaId == item.mediaId }
                                 LibraryItemCard(
                                     item = item,
                                     isPriority = isPriority,
+                                    priorityInfo = priorityInfo,
+                                    canAddPriority = !isPriority && state.priorities.size < 5,
                                     onClick = { onMediaClick(item.mediaId) },
                                     onRemove = { viewModel.removeItem(item.mediaId) },
                                     onStatusChange = { newStatus -> viewModel.updateStatus(item.mediaId, newStatus) },
-                                    onAddPriority = { level, hours -> viewModel.addPriority(item.mediaId, level, hours) }
+                                    onSetPriority = { level, hours -> 
+                                        if (isPriority) viewModel.updatePriority(item.mediaId, level, hours)
+                                        else viewModel.addPriority(item.mediaId, level, hours)
+                                    },
+                                    onRemovePriority = { viewModel.removePriority(item.mediaId) }
                                 )
                             }
                         }
@@ -215,8 +223,43 @@ fun LibraryScreen(
 private fun PriorityItemCard(
     priority: Priority,
     onClick: () -> Unit,
+    onEdit: (Int, Int?) -> Unit,
     onRemove: () -> Unit
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    var priorityDialogVisible by remember { mutableStateOf(false) }
+
+    if (priorityDialogVisible) {
+        var level by remember { mutableIntStateOf(priority.priority) }
+        AlertDialog(
+            onDismissRequest = { priorityDialogVisible = false },
+            title = { Text("Edit Priority") },
+            text = {
+                Column {
+                    Text("Urgency Level (1-3)", style = MaterialTheme.typography.labelMedium)
+                    Row {
+                        (1..3).forEach { l ->
+                            FilterChip(
+                                selected = level == l,
+                                onClick = { level = l },
+                                label = { Text(l.toString()) },
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = { onEdit(level, null); priorityDialogVisible = false }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { priorityDialogVisible = false }) { Text("Cancel") }
+            }
+        )
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
@@ -243,8 +286,23 @@ private fun PriorityItemCard(
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                 )
             }
-            IconButton(onClick = onRemove) {
-                Icon(Icons.Outlined.MoreVert, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+            Box {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(Icons.Outlined.MoreVert, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Edit Priority") },
+                        onClick = { menuExpanded = false; priorityDialogVisible = true }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Remove from Priorities") },
+                        onClick = { menuExpanded = false; onRemove() }
+                    )
+                }
             }
         }
     }
@@ -254,10 +312,13 @@ private fun PriorityItemCard(
 private fun LibraryItemCard(
     item: LibraryItem,
     isPriority: Boolean,
+    priorityInfo: Priority?,
+    canAddPriority: Boolean,
     onClick: () -> Unit,
     onRemove: () -> Unit,
     onStatusChange: (LibraryStatus) -> Unit,
-    onAddPriority: (Int, Int?) -> Unit
+    onSetPriority: (Int, Int?) -> Unit,
+    onRemovePriority: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     var statusDialogVisible by remember { mutableStateOf(false) }
@@ -285,10 +346,10 @@ private fun LibraryItemCard(
     }
 
     if (priorityDialogVisible) {
-        var level by remember { mutableIntStateOf(1) }
+        var level by remember { mutableIntStateOf(priorityInfo?.priority ?: 1) }
         AlertDialog(
             onDismissRequest = { priorityDialogVisible = false },
-            title = { Text("Set Priority") },
+            title = { Text(if (isPriority) "Edit Priority" else "Set Priority") },
             text = {
                 Column {
                     Text("Urgency Level (1-3)", style = MaterialTheme.typography.labelMedium)
@@ -305,7 +366,7 @@ private fun LibraryItemCard(
                 }
             },
             confirmButton = {
-                Button(onClick = { onAddPriority(level, null); priorityDialogVisible = false }) {
+                Button(onClick = { onSetPriority(level, null); priorityDialogVisible = false }) {
                     Text("Save")
                 }
             },
@@ -399,10 +460,19 @@ private fun LibraryItemCard(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false }
                 ) {
-                    if (item.status == LibraryStatus.WANT_TO && !isPriority) {
+                    if (item.status == LibraryStatus.WANT_TO && canAddPriority) {
                         DropdownMenuItem(
                             text = { Text("Add to Priorities") },
                             onClick = { menuExpanded = false; priorityDialogVisible = true }
+                        )
+                    } else if (isPriority) {
+                        DropdownMenuItem(
+                            text = { Text("Edit Priority") },
+                            onClick = { menuExpanded = false; priorityDialogVisible = true }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Remove from Priorities") },
+                            onClick = { menuExpanded = false; onRemovePriority() }
                         )
                     }
                     DropdownMenuItem(

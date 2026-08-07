@@ -17,7 +17,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import edu.metrostate.ics342.mediatracker.R
-import edu.metrostate.ics342.mediatracker.data.FakeMediaRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,10 +27,8 @@ fun SearchScreen(
 ) {
     val query by viewModel.query.collectAsState()
     val selectedType by viewModel.selectedType.collectAsState()
-
-    val popularItems = FakeMediaRepository.mediaList.filter { media ->
-        selectedType.isEmpty() || media.mediaType.apiString == selectedType
-    }
+    val popularItems by viewModel.popularItems.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(title = { Text(stringResource(R.string.app_name)) })
